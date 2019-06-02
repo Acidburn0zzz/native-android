@@ -24,7 +24,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 
     return JNI_VERSION_1_6;
 }
-
+/*
 extern "C" JNIEXPORT void Java_com_tns_Runtime_SetManualInstrumentationMode(JNIEnv* _env, jobject obj, jstring mode) {
     try {
         Runtime::SetManualInstrumentationMode(mode);
@@ -372,3 +372,4 @@ extern "C" JNIEXPORT void Java_com_tns_Runtime_ResetDateTimeConfigurationCache(J
     auto isolate = runtime->GetIsolate();
     Date::DateTimeConfigurationChangeNotification(isolate);
 }
+*/
