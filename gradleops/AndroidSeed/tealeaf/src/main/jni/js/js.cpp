@@ -128,6 +128,24 @@ string app_package_name;
 
 CEXPORT bool js_is_ready();
 
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+    try {
+        Runtime::Init(vm, reserved);
+    } catch (NativeScriptException& e) {
+        e.ReThrowToJava();
+    } catch (std::exception e) {
+        stringstream ss;
+        ss << "Error: c++ exception: " << e.what() << endl;
+        NativeScriptException nsEx(ss.str());
+        nsEx.ReThrowToJava();
+    } catch (...) {
+        NativeScriptException nsEx(std::string("Error: c++ exception!"));
+        nsEx.ReThrowToJava();
+    }
+
+    return JNI_VERSION_1_6;
+}
+
 #ifdef DEBUG
 static int calc_elapsed(struct timeval *mark) {
     struct timeval now;

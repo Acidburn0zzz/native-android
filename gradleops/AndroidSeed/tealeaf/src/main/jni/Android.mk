@@ -203,48 +203,47 @@ LOCAL_SRC_FILES :=  	js/js.cpp                             \
 			gen/js_timestep_view_template.gen.cpp             \
 			js/js_string_cache.cpp                            \
 			gen/js_timestep_image_map_template.gen.cpp	              \
-			ArgConverter.cpp	              \
-    ArrayBufferHelper.cpp	              \
-    ArrayElementAccessor.cpp	              \
-    ArrayHelper.cpp	              \
-    AssetExtractor.cpp	              \
-    CallbackHandlers.cpp	              \
-    Constants.cpp	              \
-    DesugaredInterfaceCompanionClassNameResolver.cpp	              \
-    DirectBuffer.cpp	              \
-    FieldAccessor.cpp	              \
-    File.cpp	              \
-    JEnv.cpp	              \
-    JType.cpp	              \
-    JniSignatureParser.cpp	              \
-    JsArgConverter.cpp	              \
-    JsArgToArrayConverter.cpp	              \
-    Logger.cpp	              \
-    ManualInstrumentation.cpp	              \
-    MetadataMethodInfo.cpp	              \
-    MetadataNode.cpp	              \
-    MetadataReader.cpp	              \
-    MetadataTreeNode.cpp	              \
-    MethodCache.cpp	              \
-    ModuleInternal.cpp	              \
-    NativeScriptException.cpp	              \
-    NumericCasts.cpp	              \
-    ObjectManager.cpp	              \
-    Profiler.cpp	              \
-    ReadWriteLock.cpp	              \
-    Runtime.cpp	              \
-    SimpleAllocator.cpp	              \
-    SimpleProfiler.cpp	              \
-   Util.cpp	              \
-    V8GlobalHelpers.cpp	              \
-    V8StringConstants.cpp	              \
-    WeakRef.cpp	              \
-   com_tns_Runtime.cpp	              \
-    deps/console/Console.cpp	              \
-    com_tealeaf_AssetExtractor.cpp	              
+			ArrayBufferHelper.cpp	              \
+    		ArrayElementAccessor.cpp	              \
+    		ArrayHelper.cpp	              \
+    		AssetExtractor.cpp	              \
+    		CallbackHandlers.cpp	              \
+    		Constants.cpp	       \
+			DirectBuffer.cpp	              \
+    		FieldAccessor.cpp	              \
+    		File.cpp	              \
+    		JEnv.cpp	              \
+			Util.cpp	              \
+    		V8GlobalHelpers.cpp	              \
+    		V8StringConstants.cpp	              \
+    		WeakRef.cpp	              \
+    		deps/console/Console.cpp	              \
+    		com_tealeaf_AssetExtractor.cpp			\
+			Runtime.cpp	              \
+            NativeScriptException.cpp	              \
+            SimpleProfiler.cpp	              \
+            ObjectManager.cpp	              \
+            ArgConverter.cpp	              \
+            SimpleAllocator.cpp	              \
                 	              
 ifeq (${DEBUG}, 1)
-        LOCAL_SRC_FILES +=  DOMDomainCallbackHandlers.cpp	              \
+        LOCAL_SRC_FILES +=  DesugaredInterfaceCompanionClassNameResolver.cpp	              \
+    	JType.cpp	              \
+    	JniSignatureParser.cpp	              \
+    	JsArgConverter.cpp	              \
+    	JsArgToArrayConverter.cpp	              \
+    	Logger.cpp	              \
+    	ManualInstrumentation.cpp	              \
+    	MetadataMethodInfo.cpp	              \
+    	MetadataNode.cpp	              \
+    	MetadataReader.cpp	              \
+    	MetadataTreeNode.cpp	              \
+    	MethodCache.cpp	              \
+    	ModuleInternal.cpp	              \
+    	NumericCasts.cpp	              \
+    	Profiler.cpp	              \
+    	ReadWriteLock.cpp	              \
+        DOMDomainCallbackHandlers.cpp	              \
         NetworkDomainCallbackHandlers.cpp	              \
         JsV8InspectorClient.cpp	              \
  		deps/v8_inspector/src/inspector/protocol/CSS.cpp	              \
