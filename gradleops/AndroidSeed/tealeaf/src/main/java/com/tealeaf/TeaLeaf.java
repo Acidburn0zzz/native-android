@@ -597,6 +597,19 @@ public class TeaLeaf extends FragmentActivity {
 		logger.log("{tealeaf} Activity got onPause");
 		super.onPause();
 
+
+
+
+		if (screenOffReceiver != null) {
+			try {
+				unregisterReceiver(screenOffReceiver);
+			} catch (Exception e) {
+				logger.log("{focus} Unable to unregister screenOffReciever");
+				e.printStackTrace();
+			}
+		}
+
+
 		ActivityState.onPause();
 		pauseGL();
 		paused = true;
@@ -604,6 +617,8 @@ public class TeaLeaf extends FragmentActivity {
 	}
 
 	private void pause() {
+
+
 		if (ActivityState.hasPaused(true)) {
 			//TODO only dispatch this event when JS is running.
 			if (glView != null && glView.running()) {
@@ -619,6 +634,7 @@ public class TeaLeaf extends FragmentActivity {
 			}
 			soundQueue.onPause();
 			soundQueue.pauseSound(SoundQueue.LOADING_SOUND);
+
 		}
 	}
 
@@ -633,6 +649,9 @@ public class TeaLeaf extends FragmentActivity {
 
 		super.onResume();
 		ActivityState.onResume();
+
+
+		registerScreenOffReceiver();
 		paused = false;
 		if(settings.isUpdateReady(options.getBuildIdentifier())) {
 			if(settings.isMarketUpdate(options.getBuildIdentifier())) {
@@ -685,7 +704,6 @@ public class TeaLeaf extends FragmentActivity {
 		super.onDestroy();
 		PluginManager.callAll("onDestroy");
 		logger.log("{tealeaf} Destroy");
-		glView.destroy();
 		NativeShim.reset();
 	}
 
@@ -787,6 +805,16 @@ public class TeaLeaf extends FragmentActivity {
 	}
 
 	private void registerScreenOffReceiver() {
+
+		if (screenOffReceiver != null) {
+			try {
+				unregisterReceiver(screenOffReceiver);
+			} catch (Exception e) {
+				logger.log("{focus} Unable to unregister screenOffReciever");
+				e.printStackTrace();
+			}
+		}
+
 		if(screenOffReceiver == null) {
 			makeScreenOffReceiver();
 		}

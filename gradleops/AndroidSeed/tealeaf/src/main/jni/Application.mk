@@ -1,4 +1,4 @@
-APP_ABI := armeabi-v7a arm64-v8a
+APP_ABI :=  arm64-v8a armeabi-v7a
 # do not put this comment from the right of the 1st line: armeabi-v7a arm64-v8a
 
 

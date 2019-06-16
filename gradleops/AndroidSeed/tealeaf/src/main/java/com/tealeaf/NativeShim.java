@@ -99,9 +99,12 @@ public class NativeShim {
 	}
 
 	public void onPause() {
+		context.unregisterReceiver(this.networkStateReceiver);
 	}
 
 	public void onResume() {
+		IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+		context.registerReceiver(this.networkStateReceiver, filter);
 	}
 
 	public String getVersionCode() {

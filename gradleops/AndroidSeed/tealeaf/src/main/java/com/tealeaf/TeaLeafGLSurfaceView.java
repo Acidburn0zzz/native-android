@@ -506,22 +506,16 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 					teaLeafGLSurfaceViewStateCallback.changeState(FIRST_INIT_FAIL);
 					logger.log("{js} ERROR: Unable to initialize isolate");
 				} else {
-					// was
-					//if (NativeShim.initJS(view.context.getLaunchUri(),
-					//		view.context.getOptions().getAndroidHash())) {
-					if (NativeShim.initJS(TeaLeaf.get().getLaunchUri(),
+							if (NativeShim.initJS(TeaLeaf.get().getLaunchUri(),
 							TeaLeaf.get().getOptions().getAndroidHash()))
 					{
 
 						if(BuildConfig.DEBUG) {
-							// Todo check: Maybe auhtor uses resourses uppack as pausing between init insp and run it
 							NativeShim.startInspectorServer();
 						}
 
-
 						if (NativeShim.runNativeJSScript())
 						{
-							//Todo: make sure if we need to start NativeShim.run() from callback (after inspector started) in same thread
 							NativeShim.run();
 							teaLeafGLSurfaceViewStateCallback.changeState(FIRST_LOAD);
 						} else {
@@ -553,22 +547,6 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 
 			return true;
 		}
-
-
-	/*	private TeaLeafThreadsCallback teaLeafThreadsCallbackJSInitializer = new TeaLeafThreadsCallback() {
-			@Override
-			public void runFinally(Context context) {
-				Toast.makeText(TeaLeaf.get(), "5 seconds to open debug url in chrome debug tools", Toast.LENGTH_LONG);
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				Thread thread = new Thread(new JSInitializer().init(teaLeafGLSurfaceViewStateCallback));
-				thread.setName("JS Thread");
-			//	TeaLeaf.get().runOnUiThread(thread);
-			}
-		};*/
 
 		private void handleInitFail(final String title, final String prompt) {
 			if (view.context.getOptions().isDevelop()) {
@@ -729,7 +707,7 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 			}
 			return false;
 		}
-		// 1)Unable to open assets/resources/native.js todo: continue copying files
+		
 		@Override
 		public int hashCode() {
 			return super.hashCode();
