@@ -96,12 +96,16 @@ CEXPORT char *resource_loader_string_from_url(const char *url) {
     unsigned long dummy;
     contents = (char*)resource_loader_read_file(url, &dummy);
     if(contents == NULL) {
+    LOG("{core} size read from JAVA");
         // otherwise, pass it up to Java
         resource *res = resource_loader_load_url(url);
         if (res->text) {
             contents = strdup(res->text);
         }
         resource_loader_destroy_resource(res);
+    }
+    else{
+    LOG("{core} size read from native");
     }
     return contents;
 }
@@ -165,9 +169,15 @@ CEXPORT unsigned char *resource_loader_read_file(const char * url, unsigned long
         return NULL;
     }
     char *base_path = storage_dir;
-    size_t len = strlen(base_path) + strlen(FILESYSTEM_PREFIX) + strlen(url) + 1;
-    char *path = (char*)malloc(len);
-    snprintf(path, len, "%s%s%s", base_path, FILESYSTEM_PREFIX, url);
+    //size_t len = strlen(base_path) + strlen(FILESYSTEM_PREFIX) + strlen(url) + 1;
+    int len = snprintf(NULL, 0, "%s%s%s", base_path, FILESYSTEM_PREFIX, url);
+    //char *path = (char*)malloc(len);
+    char *path = (char*)malloc(len + 1);
+    snprintf(path, len+1, "%s%s%s", base_path, FILESYSTEM_PREFIX, url);
+
+      //ssize_t bufsz = snprintf(NULL, len, "%s%s%s", base_path, FILESYSTEM_PREFIX, url);
+       // char* buf = malloc(bufsz + 1);
+        //snprintf(buf, bufsz + 1, "%s%s%s", base_path, FILESYSTEM_PREFIX, url);
 
     struct stat statBuf;
     int result = stat(path, &statBuf);
@@ -175,10 +185,12 @@ CEXPORT unsigned char *resource_loader_read_file(const char * url, unsigned long
     bool on_file_sys = (result != -1);
     if(on_file_sys) {
         FILE *file_from_sys = fopen(path, "r");
-
+ //LOG("{core} size %s",  on_file_sys);
         if(!file_from_sys) {
+           // LOG("{core} size %s",  "on_file_sys false");
             on_file_sys = false;
         } else {
+         //   LOG("{core} size %s",  "on_file_sys true");
             //adding a byte to null terminate the byte stream
             *sz = statBuf.st_size + 1;
             data = (unsigned char*)malloc(*sz);

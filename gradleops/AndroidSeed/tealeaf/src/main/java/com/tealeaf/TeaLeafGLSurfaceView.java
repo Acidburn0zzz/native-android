@@ -34,6 +34,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -497,37 +498,53 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 			}
 		};
 
-	public class JSInitializer implements Runnable {
-		TeaLeafGLSurfaceViewStateCallback teaLeafGLSurfaceViewStateCallback;
-			public void run() {
 
-				if (!NativeShim.initIsolate()) {
+		private void runJS() {
+		/*	try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}*/
 
-					teaLeafGLSurfaceViewStateCallback.changeState(FIRST_INIT_FAIL);
-					logger.log("{js} ERROR: Unable to initialize isolate");
-				} else {
-							if (NativeShim.initJS(TeaLeaf.get().getLaunchUri(),
-							TeaLeaf.get().getOptions().getAndroidHash()))
+			if (!NativeShim.initIsolate()) {
+
+				teaLeafGLSurfaceViewStateCallback.changeState(FIRST_INIT_FAIL);
+				logger.log("{js} ERROR: Unable to initialize isolate");
+			} else {
+				if (NativeShim.initJS(TeaLeaf.get().getLaunchUri(),
+						TeaLeaf.get().getOptions().getAndroidHash()))
+				{
+					if(BuildConfig.DEBUG) {
+						NativeShim.startInspectorServer();
+					}
+					
+					while(!NativeShim.isExtractFilesCompleted()){
+						Log.w("Tealeaft", "Waiting for files extration");
+						}
+
+					if (NativeShim.runNativeJSScript())
 					{
-
-						if(BuildConfig.DEBUG) {
-							NativeShim.startInspectorServer();
-						}
-
-						if (NativeShim.runNativeJSScript())
-						{
-							NativeShim.run();
-							teaLeafGLSurfaceViewStateCallback.changeState(FIRST_LOAD);
-						} else {
-							teaLeafGLSurfaceViewStateCallback.changeState(FIRST_INIT_FAIL);
-							logger.log("{js} ERROR: Unable to retrieve native.js");
-						}
-
+						
+						
+						
+						NativeShim.run();
+						teaLeafGLSurfaceViewStateCallback.changeState(FIRST_LOAD);
 					} else {
 						teaLeafGLSurfaceViewStateCallback.changeState(FIRST_INIT_FAIL);
 						logger.log("{js} ERROR: Unable to retrieve native.js");
 					}
+
+				} else {
+					teaLeafGLSurfaceViewStateCallback.changeState(FIRST_INIT_FAIL);
+					logger.log("{js} ERROR: Unable to retrieve native.js");
 				}
+			}
+		}
+
+	public class JSInitializer implements Runnable {
+		TeaLeafGLSurfaceViewStateCallback teaLeafGLSurfaceViewStateCallback;
+			public void run() {
+				runJS();
 			}
 
 		private JSInitializer init(TeaLeafGLSurfaceViewStateCallback teaLeafGLSurfaceViewStateCallback){
@@ -540,13 +557,24 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 		 * Start inspector before V8Engine is launched and before script compiles and runs
 		 */
 		private boolean beginJSInitialization() {
-			state = 0;
-			Thread thread = new Thread(new JSInitializer().init(teaLeafGLSurfaceViewStateCallback));
+
+			//state = 0;
+			//1Почитать про Thread.start в андроид может он его откладывает
+			//2		Про RUnnable ...
+			//3 убрать логику из отдельного потока - прот
+			/*Thread thread = new Thread(new JSInitializer().init(teaLeafGLSurfaceViewStateCallback));
 			thread.setName("JS Thread");
-			thread.start();
+			thread.start();*/
+			
+
+			runJS();
+
+
 
 			return true;
 		}
+
+
 
 		private void handleInitFail(final String title, final String prompt) {
 			if (view.context.getOptions().isDevelop()) {
@@ -584,6 +612,12 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 
 			switch (state) {
 			case FIRST_RUN:
+				/*try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				*/
 				if (!beginJSInitialization()) {
 					logger.log("{js} Retrying initialization of JavaScript VM...");
 					state = WAIT_FOR_RETRY;
@@ -794,13 +828,15 @@ public class TeaLeafGLSurfaceView extends com.tealeaf.GLSurfaceView {
 				logger.log("{js} Initializing JS config");
 
 				this.selectSplashScreen();
-
+				//TeaLeaf.extractAssets();
 				NativeShim.init(nativeShim, view.context.getCodeHost(),
 						options.getTcpHost(), options.getCodePort(),
 						options.getTcpPort(), options.getEntryPoint(),
 						options.getSourceDir(), width, height,
 						options.isRemoteLoading(), options.getSplash(),
 						options.getSimulateID());
+
+
 
 				// set halfsized textures
 				Settings settings = view.context.getSettings();

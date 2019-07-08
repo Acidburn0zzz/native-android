@@ -26,8 +26,12 @@ public class DefaultExtractPolicy implements ExtractPolicy {
     }
 
     public boolean shouldExtract(Context context) {
+       
         String assetsThumbFilePath = getFilesDir(context) + File.separatorChar + ASSETS_THUMB_FILENAME;
         String oldAssetsThumb = getCachedAssetsThumb(assetsThumbFilePath);
+        if(Util.isDebuggableApp(context)){
+            return true;
+        }
         if (oldAssetsThumb == null) {
             return true;
         } else {
@@ -50,7 +54,8 @@ public class DefaultExtractPolicy implements ExtractPolicy {
     }
 
     public boolean forceOverwrite() {
-        return true;
+        //was true
+        return false;
     }
 
     public FileExtractor extractor() {

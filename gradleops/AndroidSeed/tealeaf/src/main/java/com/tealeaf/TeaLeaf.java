@@ -310,10 +310,13 @@ public class TeaLeaf extends FragmentActivity {
 		// start push notifications, but defer for 10 seconds to give us time to start up
 		PushBroadcastReceiver.scheduleNext(this, 10);
 
+
+
 		glView = new TeaLeafGLSurfaceView(this);
-		if (isTestApp == true) {
+		/*if (isTestApp == true) {
 			startGame();
 		}
+		*/
 
 		glViewPaused = false;
 
@@ -351,7 +354,7 @@ public class TeaLeaf extends FragmentActivity {
 		});
 	}
 
-	private void extractAssets() {
+	public static void extractAssets() {
 
 
 		{
@@ -359,22 +362,22 @@ public class TeaLeaf extends FragmentActivity {
 			//ManualInstrumentation.Frame extractionFrame = ManualInstrumentation.start("Extracting assets");
 			try {
 				//if (logger.isEnabled()) {
-				Log.d(getClass().getSimpleName(),"Extracting assets...");
+				Log.d(instance.getClass().getSimpleName(),"Extracting assets...");
 				//}
-				Logger logger = new LogcatLogger(this);
+				Logger logger = new LogcatLogger(instance);
 				AssetExtractor aE = new AssetExtractor(null, logger);
 
 				DefaultExtractPolicy extractPolicy = new DefaultExtractPolicy(logger);
 
-				String outputDir = getFilesDir().getPath() + File.separator;
+				String outputDir = instance.getFilesDir().getPath() + File.separator;
 
 				// will force deletion of previously extracted files in app/files directories
 				// see https://github.com/NativeScript/NativeScript/issues/4137 for reference
 				boolean removePreviouslyInstalledAssets = true;
-				aE.extractAssets(this, "resources", outputDir, extractPolicy, removePreviouslyInstalledAssets);
+				aE.extractAssets(instance, "resources", outputDir, extractPolicy, removePreviouslyInstalledAssets);
 				//aE.extractAssets(this, "internal", outputDir, extractPolicy, removePreviouslyInstalledAssets);
 				//aE.extractAssets(this, "metadata", outputDir, extractPolicy, false);
-				extractPolicy.setAssetsThumb(getApplication());
+				extractPolicy.setAssetsThumb(instance.getApplication());
 				//boolean shouldExtractSnapshots = true;
 
 				// will extract snapshot of the device appropriate architecture

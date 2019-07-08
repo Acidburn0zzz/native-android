@@ -38,6 +38,7 @@ import android.net.ConnectivityManager;
 import android.graphics.Bitmap;
 
 import android.os.Handler;
+import android.util.Log;
 import android.view.Window;
 
 import android.util.DisplayMetrics;
@@ -63,6 +64,7 @@ public class NativeShim {
 	private ConnectivityManager connectivityManager;
 	private NetworkStateReceiver networkStateReceiver;
 	private boolean onlineStatus;
+	private static boolean filesExtracted = false;
 	private int statusBarHeight;
 	private Gson gson = new Gson();
 	public NativeShim(TextManager textManager, TextureLoader textureLoader, SoundQueue soundQueue,
@@ -96,6 +98,19 @@ public class NativeShim {
 		IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
 		context.registerReceiver(this.networkStateReceiver, filter);
 
+	}
+	
+	public static void setExtractFilesCompleted() {
+		Log.e("NativeShim", "files extracted");
+		filesExtracted = true;
+	}
+	
+	public static void printUTF16(String log) {
+		Log.e("NativeShim", "log exception : "+log);
+	}
+
+	public static boolean isExtractFilesCompleted() {
+		return filesExtracted;
 	}
 
 	public void onPause() {

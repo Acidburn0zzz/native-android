@@ -129,6 +129,8 @@ extern "C" JNIEXPORT  void Java_com_tealeaf_NativeShim_init(JNIEnv *env,
         GET_STR(env, simulate_id, simulate_id_str);
         GET_STR(env, splash, splash_str);
 
+      string s(string("{native} ENTRY_POINT: ") + entry_str);
+        LOG("%s", s.c_str());
         core_init(entry_str, tcp_str, host_str, tcp_port, code_port, source_str, width, height, remote_loading, splash_str, simulate_id_str);
 
         free(entry_str);

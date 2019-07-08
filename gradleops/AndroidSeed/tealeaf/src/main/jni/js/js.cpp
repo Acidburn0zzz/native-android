@@ -65,6 +65,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <log.h>
+#include <locale>
+#include <iostream>
+#include <sstream>
 
 #include "platform/platform.h"
 #include "src/libplatform/default-platform.h"
@@ -128,6 +131,64 @@ string app_package_name;
 
 CEXPORT bool js_is_ready();
 
+string convertToString(double num) {
+    ostringstream convert;
+    convert << num; 
+    return convert.str();
+}
+// Todo remove after condition race fixed
+double roundOff(double n) {
+    double d = n * 100.0;
+    int i = d + 0.5;
+    d = (float)i / 100.0;
+    return d;
+}
+// Todo remove after condition race fixed
+string convertSize(size_t size) {               
+    static const char *SIZES[] = { "B", "KB", "MB", "GB" };
+    int div = 0;
+    size_t rem = 0;
+
+    while (size >= 1024 && div < (sizeof SIZES / sizeof *SIZES)) {
+        rem = (size % 1024);
+        div++;
+        size /= 1024;
+    }
+
+    double size_d = (float)size + (float)rem / 1024.0;
+    string result = convertToString(roundOff(size_d)) + " " + SIZES[div];
+    return result;
+}
+// Todo remove after condition race fixed
+int file_size(const char *path) {
+    struct stat results;
+
+    if (stat(path, &results) == 0) {
+        return results.st_size;
+    } else {
+        return -1;
+    }
+}
+// Todo remove after condition race fixed
+string getFileSize(string path) {
+    size_t size = file_size((const char *)path.c_str());
+    return convertSize(size);
+}
+
+static string getAppPackageName(){
+
+        if(app_package_name == ""){
+        JNIEnv* env = get_env();
+        jclass nativeshimJavaClass = env->FindClass("com/tealeaf/NativeShim");
+        jmethodID getResourcesMethod = env->GetStaticMethodID(nativeshimJavaClass, "getPackageName", "()Ljava/lang/String;");
+        env->CallStaticObjectMethod(nativeshimJavaClass, getResourcesMethod);
+        jstring packageName= (jstring)env->CallStaticObjectMethod(nativeshimJavaClass, getResourcesMethod);
+        const char* pname = env->GetStringUTFChars(packageName, NULL);
+        app_package_name = string(pname);
+        }
+        return app_package_name;
+}
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     try {
         Runtime::Init(vm, reserved);
@@ -160,28 +221,35 @@ static int calc_elapsed(struct timeval *mark) {
 /*timing stuff*/
 static DECL_BENCH(et);
 
-CEXPORT void eval_str(const char *str, const char * filename) {
+CEXPORT bool eval_str(const char *str, const char * file_name) {
+//TODO
+//1 extract assets are not the reason, seems run entry_point and run native.js are launched from different thread which calls race condition
+    bool executed = false;
     Locker l(m_isolate);
     HandleScope handle_scope(m_isolate);
     {
     if (m_context.IsEmpty()) {
         LOG("{js} ERROR: Could not evaluate. JavaScript engine is not running yet");
-        return;
+        return false;
     }
-
     Handle<Context> context = getContext();
     Context::Scope context_scope(context);
     Handle<String> source = String::NewFromUtf8(m_isolate, str);
-    Local<String> file_name = Local<String>::New(m_isolate, STRING_CACHE_none.Get(m_isolate));
+    //Local<String> file_name = Local<String>::New(m_isolate, STRING_CACHE_none.Get(m_isolate));
     if(0 == strcmp(str, "undefined")) {
-
+    v8::Unlocker unlocker(m_isolate);
+    return false;
     }
     else {
-        ExecuteString(source, filename, true, m_isolate);
+        Local<Value> retVal = ExecuteString(source, file_name, true, m_isolate);
+        bool executed  = !retVal.IsEmpty();
+        v8::Unlocker unlocker(m_isolate);
+        return executed;
+    }
 
+    return executed;
     }
-    v8::Unlocker unlocker(m_isolate);
-    }
+     return executed;
 }
 
 
@@ -252,19 +320,24 @@ static string getFileName(const string& s) {
    return("");
 }
 
-static string getAppPackageName(){
 
-        if(app_package_name == ""){
-        JNIEnv* env = get_env();
-        jclass inspectorStarterClass = env->FindClass("com/tealeaf/NativeShim");
-        jmethodID getResourcesMethod = env->GetStaticMethodID(inspectorStarterClass, "getPackageName", "()Ljava/lang/String;");
-        env->CallStaticObjectMethod(inspectorStarterClass, getResourcesMethod);
-        jstring packageName= (jstring)env->CallStaticObjectMethod(inspectorStarterClass, getResourcesMethod);
-        const char* pname = env->GetStringUTFChars(packageName, NULL);
-        app_package_name = string(pname);
-        }
-        return app_package_name;
+
+void setAssetsExtracted(){
+        JNIEnv* env = JEnv(); //get_env();
+        jclass nativeshimJavaClass= env->FindClass("com/tealeaf/NativeShim");
+        jmethodID setExtractFilesCompleted = env->GetStaticMethodID(nativeshimJavaClass, "setExtractFilesCompleted", "()V");
+        env->CallStaticVoidMethod(nativeshimJavaClass, setExtractFilesCompleted);
 }
+
+void printToJavaUTF16(const char* exception_string){
+        JNIEnv* env = get_env();
+        jclass nativeshimJavaClass= env->FindClass("com/tealeaf/NativeShim");
+        jmethodID setExtractFilesCompleted = env->GetStaticMethodID(nativeshimJavaClass, "printUTF16", "(Ljava/lang/String;)V");
+        jstring jstr1 = env->NewStringUTF(exception_string);
+        env->CallStaticVoidMethod(nativeshimJavaClass, setExtractFilesCompleted, jstr1);
+}
+
+// Todo remove after condition race fixed
 
 
 std::string GetDirectory (const std::string& path)
@@ -296,7 +369,10 @@ Handle<Value> ExecuteString(v8::Handle<v8::String> source, const char * file_nam
          std::string filename = "";
         #if defined(DEBUG)
         std::string cStrName(file_name);
-
+        if(cStrName == "native.js"){
+                        string str = "\\u{48}\\u{65}\\u{6c}\\u{6c}\\u{6f}\\u{21}";//"working on native.js";
+                        printToJavaUTF16(str .c_str());
+        }
         if(cStrName == "native.js"){
         filename = "/data/data/"+getAppPackageName()+"/files/resources/native.js";
         }
@@ -314,20 +390,24 @@ Handle<Value> ExecuteString(v8::Handle<v8::String> source, const char * file_nam
         const char *dirName = GetDirectory(filename).c_str();
       
       ////////
-        if (File::Exists(filename)) {
+        if (File::Exists(filename) && cStrName != "native.js") {
                 remove(filename.c_str());
         }
         //savefile
+        if(cStrName == "native.js"){
+        }
+        else {
         std::ofstream outfile ( filename);
         outfile << ToCString(String::Utf8Value(isolate, sourceP.Get(isolate))) << std::endl;
         outfile.close(); 
+        }
         }
         #endif
 
 
  v8::MaybeLocal<v8::Script> script;
 
-    if(filename == "" || filename == "entry_point.js"){
+    if(cStrName == "" || cStrName == "entry_point.js" || cStrName == "native.js"){
         script = v8::Script::Compile(getContext(), sourceP.Get(isolate));
     }
     else{
@@ -337,9 +417,10 @@ Handle<Value> ExecuteString(v8::Handle<v8::String> source, const char * file_nam
         v8::ScriptOrigin origin(ArgConverter::ConvertToV8String(isolate, originName));
         script = v8::Script::Compile(getContext(), sourceP.Get(isolate), &origin);
 
-        #else
-        script = v8::Script::Compile(getContext(), sourceP.Get(isolate));
-          #endif // DEBUG
+     #else
+        //script = v8::Script::Compile(getContext(), sourceP.Get(isolate));
+     #endif // DEBUG
+     script = v8::Script::Compile(getContext(), sourceP.Get(isolate));
     }
 
 
@@ -347,23 +428,44 @@ Handle<Value> ExecuteString(v8::Handle<v8::String> source, const char * file_nam
         // Print errors that happened during compilation.
         if (report_exceptions)
             sourceP.Reset();
-            ReportException(&try_catch);
+            
+           /*  if(cStrName == "native.js"){
+                        printToJavaUTF16(cStrName.c_str());
+                        std::this_thread::sleep_for(1s);
+                        return ExecuteString(source, file_name, true, m_isolate);      
+                }
+                */
+                ReportException(&try_catch);
         return Undefined(m_isolate);
     } else {
         v8::MaybeLocal<v8::Value> result = script.ToLocalChecked()->Run(getContext());
         if (result.IsEmpty()) {
+             /*if(cStrName == "native.js"){
+                      sourceP.Reset();
+                        printToJavaUTF16(filename.c_str());
+                        std::this_thread::sleep_for(1s);
+                        return ExecuteString(source, file_name, true, m_isolate);      
+                }
+                */
             assert(try_catch.HasCaught());
             // Print errors that happened during execution.
             if (report_exceptions)
                 ReportException(&try_catch);
+                if(cStrName == "native.js"){
+                    LOG("{js} native.js Reporting exception");
+                }
+                   sourceP.Reset();
             return Undefined(m_isolate);
         } else {
             Handle<Context> context = getContext();
             assert(!try_catch.HasCaught());
+            sourceP.Reset();
+           
+            
             return handle_scope.Escape(result.ToLocalChecked());
         }
-        sourceP.Reset();
-    }
+           }
+
 }
 
 static inline void log_error(const char *message) {
@@ -455,6 +557,8 @@ class ClearWeakPersistentHandleVisitor : public PersistentHandleVisitor
                                            }
 };
 
+
+
 ClearWeakPersistentHandleVisitor* visitor;
 
 void gc_start(Isolate* isolate, GCType type, GCCallbackFlags flags) {
@@ -493,6 +597,7 @@ void ReportException(v8::TryCatch* try_catch) {
         const char* exception_string = ToCString(exception);
         // print the exception.
         log_error(exception_string);
+        printToJavaUTF16(exception_string);
         window_on_error(exception_string, "", -1);
         remote_log_error(exception_string, "", -1);
     } else {
@@ -503,8 +608,27 @@ void ReportException(v8::TryCatch* try_catch) {
         snprintf(buf, sizeof(buf), "%s line: %i", filename_string, linenum);
         log_error(buf);
         v8::String::Utf8Value sourceline(m_isolate, message->GetSourceLine(getContext()).ToLocalChecked());
-        const char* sourceline_string = ToCString(sourceline);
-        log_error(sourceline_string);
+        std::string str(*sourceline, sourceline.length());
+        const char* sourceline_string = str.c_str();//ToCString(sourceline);
+        printToJavaUTF16(sourceline_string);
+        
+        printToJavaUTF16(str.c_str());
+        log_error(str.c_str());
+        snprintf(buf, sizeof(buf), "Source %s ", str.c_str());
+       
+
+ 
+  fprintf(stderr, "%s\n", sourceline_string);
+  // Print wavy underline (GetUnderline is deprecated).
+  int start = message->GetStartColumn();
+  for (int i = 0; i < start; i++) {
+    fprintf(stderr, " ");
+  }
+  int end = message->GetEndColumn();
+  for (int i = start; i < end; i++) {
+    fprintf(stderr, "^");
+  }
+  fprintf(stderr, "\n");
 
         v8::String::Utf8Value stack_trace(m_isolate, try_catch->StackTrace(getContext()).ToLocalChecked());
         const char* stack_trace_string = "no line";
@@ -516,6 +640,7 @@ void ReportException(v8::TryCatch* try_catch) {
         remote_log_error(stack_trace_string, filename_string, linenum);
     }
 }
+
 
 Handle<Function> get_on_resize() {
     Handle<Object> global = getContext()->Global();
@@ -658,7 +783,7 @@ bool init_js(const char *uri, const char *native_hash, jobject thiz) {
     m_isolate->SetCaptureStackTraceForUncaughtExceptions(true, 100, StackTrace::kOverview);
     m_isolate->AddMessageListener(NativeScriptException::OnUncaughtError);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "TNS.Native", "V8 version %s", V8::GetVersion());
+    __android_log_print(ANDROID_LOG_DEBUG, "Devkit", "V8 version %s", V8::GetVersion());
 
     m_isolate->AddGCPrologueCallback(gc_start, GCType::kGCTypeAll);
     m_isolate->AddGCEpilogueCallback(gc_end, GCType::kGCTypeAll);

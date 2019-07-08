@@ -6,6 +6,11 @@
 #include <utime.h>
 #include <sys/stat.h>
 #include "AssetExtractor.h"
+#include "core/core.h"
+#include "js/js.h"
+#include <thread>
+#include <iostream>
+#include <chrono>
 
 using namespace tns;
 
@@ -32,9 +37,7 @@ void AssetExtractor::ExtractAssets(JNIEnv* env, jobject obj, jstring apk, jstrin
 
     int err = 0;
     auto z = zip_open(strApk.c_str(), ZIP_CREATE, &err);
-LOG("{wwjseeewww} 1");
     assert(z != nullptr);
-    LOG("{wwjseeewww} 2");
     zip_int64_t num = zip_get_num_entries(z, 0);
     struct zip_stat sb;
     struct zip_file* zf;
@@ -52,6 +55,7 @@ LOG("{wwjseeewww} 1");
             struct stat attrib;
             auto shouldOverwrite = true;
             int ret = stat(assetFullname.c_str(), &attrib);
+            LOG("{js} extract assets %s", assetFullname.c_str());
             if (ret == 0 /* file exists */) {
                 auto diff = difftime(sb.mtime, attrib.st_mtime);
                 shouldOverwrite = diff > 0;
@@ -83,13 +87,32 @@ LOG("{wwjseeewww} 1");
                     t.modtime = sb.mtime;
                     utime(assetFullname.c_str(), &t);
                 }
-
+               
                 zip_fclose(zf);
             }
         }
     }
+  
+    
+    //1 Разогреть девайс до крашей, Поставить точку останова на line 103 этого документа
+    // и во время останова следить за размером файла
+    //2 Поискать проблему чтения
+    //3 REFRESH FILE DATA FROM OS BEFORE START READING IT
+    // checkFileSize(int lastLenght){
+      // int currentLenght = strlenght(string);
+      // if(currentLenghth > lastLenghth){
+          // Thread.sleep(1000ms);
+          // checkFileSize(currentLenghth)}
+          // else{
+              // conitune logics to run script
+              //}
+    //}
+    //4 Вернуть thread sleep 5000 пере runNativeJs
     delete[] pathcopy;
     zip_close(z);
+    //std::this_thread::sleep_for (std::chrono::seconds(5));
+    core_set_is_extracted(true);
+                         setAssetsExtracted();
 }
 
 void AssetExtractor::mkdir_rec(const char* dir) {

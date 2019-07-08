@@ -42,6 +42,8 @@ void dispatchData(JNIEnv *env, jint id, jstring data);
 void dispatchEvent(jstring event);
 
 bool js_init_isolate();
+void setAssetsExtracted();
+void printToJavaUTF16(const char* exception_string);
 
 v8::Local<v8::Context> getContext();
 v8::Isolate *getIsolate();
